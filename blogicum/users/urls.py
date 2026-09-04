@@ -6,13 +6,13 @@ app_name = 'users'
 
 urlpatterns = [
     path(
-        '<slug:username>/',
-        views.ProfileDetailView.as_view(),
-        name='profile'
-    ),
-    path(
-        '<slug:username>/edit/',
+        'edit/',
         views.ProfileUpdateView.as_view(),
         name='edit_profile'
+    ),
+    path(
+        '<str:username>/',
+        views.ProfileDetailView.as_view(),
+        name='profile'
     ),
 ]

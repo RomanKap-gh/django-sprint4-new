@@ -1,17 +1,14 @@
+import core.constants as constants
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.generic import (
-    DetailView,
-    UpdateView,
-)
+from django.views.generic import DetailView, UpdateView
 
 from .forms import ProfileForm
-from blog.views import OnlyAuthorMixin
 
-PROFILE_POSTS_LIMIT = 10
+User = get_user_model()
 
 
 class ProfileDetailView(DetailView):
@@ -22,10 +19,18 @@ class ProfileDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user != self.object:
-            queryset = self.object.posts.published_actualized()
+            queryset = (
+                self.object.posts.join_related_data()
+                .published_actualized()
+                .count_comments()
+            )
         else:
-            queryset = self.object.posts.all()
-        paginator = Paginator(queryset, PROFILE_POSTS_LIMIT)
+            queryset = (
+                self.object.posts
+                .filter(category__isnull=False)
+                .count_comments()
+            )
+        paginator = Paginator(queryset, constants.POST_BY_PAGE)
         page_number = self.request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         context['page_obj'] = page_obj
@@ -38,7 +43,6 @@ class ProfileDetailView(DetailView):
 
 class ProfileUpdateView(
     LoginRequiredMixin,
-    OnlyAuthorMixin,
     UpdateView
 ):
     model = User
@@ -47,11 +51,7 @@ class ProfileUpdateView(
     context_object_name = 'profile'
 
     def get_object(self, queryset=None):
-        username = self.kwargs.get('username')
-        return get_object_or_404(User, username=username)
-
-    def test_func(self):
-        return self.get_object() == self.request.user
+        return self.request.user
 
     def get_success_url(self):
         return reverse(

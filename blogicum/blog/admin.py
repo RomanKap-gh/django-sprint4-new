@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Category, Location, Post
+from .models import Category, Location, Post, Comment
+
+import core.constants as constants
 
 
 class PostAdmin(admin.ModelAdmin):
@@ -24,29 +26,33 @@ class PostAdmin(admin.ModelAdmin):
     empty_value_display = 'Не задано'
 
 
-class PostInline(admin.StackedInline):
-    model = Post
-    extra = 1
-
-
 class CategoryAdmin(admin.ModelAdmin):
-    inlines = (
-        PostInline,
-    )
     list_display = (
         'title',
     )
 
 
 class LocationAdmin(admin.ModelAdmin):
-    inlines = (
-        PostInline,
-    )
     list_display = (
         'name',
     )
 
 
+class CommentAdmin(admin.ModelAdmin):
+    list_display = (
+        'author',
+        'post',
+        'text_preview',
+        'created_at'
+    )
+
+    def text_preview(self, obj):
+        if len(obj.text) <= constants.SHORT_TEXT_SIZE:
+            return obj.text
+        return f'{obj.text[:constants.SHORT_TEXT_SIZE]}...'
+
+
 admin.site.register(Post, PostAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Location, LocationAdmin)
+admin.site.register(Comment, CommentAdmin)

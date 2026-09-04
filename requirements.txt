@@ -14,4 +14,5 @@ sentencepiece==0.2.2
 torch==2.13.0
 transformers==5.14.1
 yapf==0.43.0
+django-debug-toolbar==7.0.0
 

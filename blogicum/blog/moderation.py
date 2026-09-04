@@ -1,23 +1,19 @@
-import core.constants as constants
 from functools import cache
+
+import core.constants as constants
 import torch
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 @cache
 def load_model():
-
-    print('Загрузка модели...')
 
     tokenizer = AutoTokenizer.from_pretrained(constants.MODEL_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(
         constants.MODEL_NAME
     )
 
-    print('Модель загружена.')
+    model.eval()
 
     return tokenizer, model
 
@@ -33,7 +29,6 @@ def get_toxicity_score(text: str) -> float:
         padding=True,
     )
 
-    model.eval()
     with torch.inference_mode():
         logits = model(**inputs).logits[0]
         probabilities = torch.sigmoid(logits).cpu()

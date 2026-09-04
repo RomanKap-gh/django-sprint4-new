@@ -20,9 +20,8 @@ class PostForm(forms.ModelForm):
             'image',
         )
         widgets = {
-            'birthday': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={'type': 'date'},
+            'pub_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local'},
             ),
         }
 

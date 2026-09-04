@@ -3,11 +3,11 @@ from django.views.generic import TemplateView
 
 
 class AboutPage(TemplateView):
-    template = 'pages/about.html'
+    template_name = 'pages/about.html'
 
 
 class RulesPage(TemplateView):
-    template = 'pages/rules.html'
+    template_name = 'pages/rules.html'
 
 
 def csrf_failure(request, reason=''):

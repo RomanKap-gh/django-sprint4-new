@@ -3,34 +3,18 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+import core.constants as constants
+from core.models import CreatedAtModel, CreatedPublishedModel
+
 from .querysets import PostQuerySet
-from .managers import PublishedNowPostManager
+
 
 User = get_user_model()
-
-TITLE_SIZE = 256
-SHORT_TITLE_SIZE = 20
-
-
-class CreatedPublishedModel(models.Model):
-    is_published = models.BooleanField(
-        default=True,
-        verbose_name='Опубликовано',
-        help_text='Снимите галочку, чтобы скрыть публикацию.'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Добавлено'
-    )
-
-    class Meta:
-        abstract = True
-        ordering = ('-created_at',)
 
 
 class Category(CreatedPublishedModel):
     title = models.CharField(
-        max_length=TITLE_SIZE,
+        max_length=constants.TITLE_SIZE,
         verbose_name='Заголовок'
     )
     description = models.TextField(verbose_name='Описание')
@@ -46,14 +30,14 @@ class Category(CreatedPublishedModel):
         verbose_name_plural = 'Категории'
 
     def __str__(self):
-        if len(self.title) <= SHORT_TITLE_SIZE:
+        if len(self.title) <= constants.SHORT_TITLE_SIZE:
             return self.title
-        return f'{self.title[:SHORT_TITLE_SIZE]}...'
+        return f'{self.title[:constants.SHORT_TITLE_SIZE]}...'
 
 
 class Location(CreatedPublishedModel):
     name = models.CharField(
-        max_length=TITLE_SIZE,
+        max_length=constants.TITLE_SIZE,
         verbose_name='Название места'
     )
 
@@ -67,7 +51,7 @@ class Location(CreatedPublishedModel):
 
 class Post(CreatedPublishedModel):
     title = models.CharField(
-        max_length=TITLE_SIZE,
+        max_length=constants.TITLE_SIZE,
         verbose_name='Заголовок'
     )
     text = models.TextField(verbose_name='Текст')
@@ -97,22 +81,17 @@ class Post(CreatedPublishedModel):
     )
     image = models.ImageField(
         'Фото',
-        upload_to='posts_images/',
+        upload_to='post_images/',
         blank=True
     )
 
     objects = PostQuerySet.as_manager()
-    published_now = PublishedNowPostManager()
 
     class Meta:
         ordering = ('-pub_date',)
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
         default_related_name = 'posts'
-
-    @property
-    def comment_count(self):
-        return self.comments.count()
 
     def get_absolute_url(self):
         return reverse('blog:post_detail', kwargs={'post_id': self.pk})
@@ -121,7 +100,7 @@ class Post(CreatedPublishedModel):
         return self.title
 
 
-class Comment(models.Model):
+class Comment(CreatedAtModel):
     text = models.TextField('Текст')
     post = models.ForeignKey(
         Post,
@@ -132,15 +111,10 @@ class Comment(models.Model):
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='comments_author',
-        verbose_name='Автор публикации',
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Добавлено',
+        related_name='comments',
+        verbose_name='Автор комментария',
     )
 
     class Meta:
-        verbose_name = 'комментарий',
+        verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
-        ordering = ('created_at',)

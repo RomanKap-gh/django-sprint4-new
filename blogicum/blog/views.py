@@ -1,20 +1,17 @@
+import core.constants as constants
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
     ListView,
-    UpdateView,
+    UpdateView
 )
 
-from .forms import PostForm, CommentForm
-from .models import Post, Category, Comment
-
-POST_BY_PAGE = 10
+from .forms import CommentForm, PostForm
+from .models import Category, Comment, Post
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
@@ -30,16 +27,15 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self, queryset=None):
-        post_id = self.kwargs.get('post_id')
-        post = get_object_or_404(Post.objects, pk=post_id)
-        if self.request.user != post.author:
-            if (
-                post.pub_date > timezone.now()
-                or not post.is_published
-                or not post.category.is_published
-            ):
-                raise Http404("Публикация не найдена или недоступна")
-        return post
+        post = get_object_or_404(Post, pk=self.kwargs[self.pk_url_kwarg])
+        if self.request.user == post.author:
+            return post
+        else:
+            post = get_object_or_404(
+                Post.objects.published_actualized(),
+                pk=self.kwargs[self.pk_url_kwarg]
+            )
+            return post
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -52,8 +48,7 @@ class PostDetailView(DetailView):
 
 class CategoryPostsListView(ListView):
     model = Category
-    ordering = 'id'
-    paginate_by = POST_BY_PAGE
+    paginate_by = constants.POST_BY_PAGE
     template_name = 'blog/category.html'
 
     def dispatch(self, request, *args, **kwargs):
@@ -65,7 +60,11 @@ class CategoryPostsListView(ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        return self.category.posts(manager='published_now').all()
+        return (
+            self.category.posts.join_related_data()
+            .published_actualized()
+            .count_comments()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -90,12 +89,16 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 class PostListView(ListView):
     model = Post
-    ordering = 'id'
-    paginate_by = POST_BY_PAGE
+    paginate_by = constants.POST_BY_PAGE
     template_name = 'blog/index.html'
 
     def get_queryset(self):
-        return Post.published_now.all()
+        posts = super().get_queryset()
+        return (
+            posts.join_related_data()
+            .published_actualized()
+            .count_comments()
+        )
 
 
 class PostUpdateView(
@@ -127,6 +130,11 @@ class PostDeleteView(
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = PostForm(instance=self.object)
+        return context
+
     def get_success_url(self):
         return reverse(
             'users:profile',
@@ -151,7 +159,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     def form_invalid(self, form):
         context = {
             'post': self.post_obj,
-            'comments': self.post_obj.comments.all().order_by('created_at'),
+            'comments': self.post_obj.comments.order_by('created_at'),
             'form': form,
         }
         return render(self.request, 'blog/detail.html', context)
