@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import Count
-from django.db.models import Q
 from django.utils import timezone
 
 
@@ -12,9 +11,8 @@ class PostQuerySet(models.QuerySet):
         return self.filter(
             pub_date__lte=timezone.now(),
             is_published=True,
-            category__is_published=True
-        ).filter(
-            Q(category__is_published=True) | Q(category__isnull=True)
+            category__is_published=True,
+            category__isnull=False
         ).order_by('-pub_date')
 
     def count_comments(self):

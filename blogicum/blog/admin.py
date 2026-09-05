@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import Category, Location, Post, Comment
-
 import core.constants as constants
+
+from .models import Category, Comment, Location, Post
 
 
 class PostAdmin(admin.ModelAdmin):

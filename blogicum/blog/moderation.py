@@ -1,8 +1,9 @@
 from functools import cache
 
-import core.constants as constants
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+import core.constants as constants
 
 
 @cache

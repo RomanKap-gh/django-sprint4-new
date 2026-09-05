@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from core.constants import MODERATION_ERROR
 
-from .models import Post, Comment
+from .models import Comment, Post
 from .moderation import is_toxic
 
 

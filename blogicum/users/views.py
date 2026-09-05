@@ -1,10 +1,11 @@
-import core.constants as constants
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic import DetailView, UpdateView
+
+import core.constants as constants
 
 from .forms import ProfileForm
 
@@ -18,18 +19,11 @@ class ProfileDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        queryset = self.object.posts.count_comments()
         if self.request.user != self.object:
-            queryset = (
-                self.object.posts.join_related_data()
-                .published_actualized()
-                .count_comments()
-            )
+            queryset = queryset.join_related_data().published_actualized()
         else:
-            queryset = (
-                self.object.posts
-                .filter(category__isnull=False)
-                .count_comments()
-            )
+            queryset = queryset.filter(category__isnull=False)
         paginator = Paginator(queryset, constants.POST_BY_PAGE)
         page_number = self.request.GET.get('page')
         page_obj = paginator.get_page(page_number)

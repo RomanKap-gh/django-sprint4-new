@@ -1,13 +1,12 @@
 from django.conf import settings
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.urls import reverse
 
 import core.constants as constants
 from core.models import CreatedAtModel, CreatedPublishedModel
 
 from .querysets import PostQuerySet
-
 
 User = get_user_model()
 
